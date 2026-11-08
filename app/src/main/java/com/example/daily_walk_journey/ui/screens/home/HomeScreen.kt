@@ -22,6 +22,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,7 +34,9 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun HomeScreen(
-    stepCount: Int = 0,
+    stepCount: Long = 0L,
+    stepInterval: Int = 1000,
+    dailyTarget: Long = 10000L,
     isTracking: Boolean = false,
     onStartTracking: () -> Unit = {},
     onStopTracking: () -> Unit = {}
@@ -61,12 +64,12 @@ fun HomeScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
-            // Step Indicator Circle Wireframe
+            // Step Indicator Circle
             Box(
                 modifier = Modifier
-                    .size(220.dp)
+                    .size(210.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
@@ -75,10 +78,10 @@ fun HomeScreen(
                     Icon(
                         imageVector = Icons.Default.DirectionsWalk,
                         contentDescription = "Steps",
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(44.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = "$stepCount",
                         style = MaterialTheme.typography.displayMedium,
@@ -87,13 +90,44 @@ fun HomeScreen(
                     )
                     Text(
                         text = "Langkah Hari Ini",
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Progress Bar Harian
+            val progress = (stepCount.toFloat() / dailyTarget.toFloat()).coerceIn(0f, 1f)
+            Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Target Harian",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "$stepCount / $dailyTarget langkah (${(progress * 100).toInt()}%)",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(CircleShape)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Checkpoint Card
             Card(
@@ -121,7 +155,12 @@ fun HomeScreen(
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
-                        val remaining = if (stepCount == 0) 1000 else 1000 - (stepCount % 1000)
+                        val remaining = if (stepCount == 0L) {
+                            stepInterval.toLong()
+                        } else {
+                            val rem = stepInterval - (stepCount % stepInterval)
+                            if (rem == 0L) stepInterval.toLong() else rem
+                        }
                         Text(
                             text = "$remaining langkah lagi untuk abadikan momen",
                             style = MaterialTheme.typography.bodySmall,

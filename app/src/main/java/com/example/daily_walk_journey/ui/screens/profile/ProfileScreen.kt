@@ -14,12 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.DirectionsWalk
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
@@ -29,10 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,8 +35,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun ProfileScreen() {
-    var selectedInterval by remember { mutableIntStateOf(1000) }
+fun ProfileScreen(
+    selectedInterval: Int = 1000,
+    onIntervalChanged: (Int) -> Unit = {}
+) {
     val scrollState = rememberScrollState()
 
     Column(
@@ -117,7 +113,7 @@ fun ProfileScreen() {
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // Interval Setting Wireframe
+        // Interval Setting
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
@@ -147,7 +143,7 @@ fun ProfileScreen() {
                     listOf(500, 1000, 2000).forEach { interval ->
                         FilterChip(
                             selected = selectedInterval == interval,
-                            onClick = { selectedInterval = interval },
+                            onClick = { onIntervalChanged(interval) },
                             label = { Text("$interval Langkah") }
                         )
                     }

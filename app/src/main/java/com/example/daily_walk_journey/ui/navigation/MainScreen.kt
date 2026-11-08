@@ -1,8 +1,6 @@
 package com.example.daily_walk_journey.ui.navigation
 
 import android.Manifest
-import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
@@ -16,8 +14,11 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
@@ -26,31 +27,55 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.daily_walk_journey.data.preferences.StepPreferences
 import com.example.daily_walk_journey.service.StepCounterService
 import com.example.daily_walk_journey.ui.screens.camera.CameraScreen
 import com.example.daily_walk_journey.ui.screens.home.HomeScreen
 import com.example.daily_walk_journey.ui.screens.map.MapScreen
 import com.example.daily_walk_journey.ui.screens.profile.ProfileScreen
 import com.example.daily_walk_journey.ui.screens.timeline.TimelineScreen
+import kotlinx.coroutines.launch
 
 @Composable
-fun MainScreen() {
+fun MainScreen(openCameraDirectly: Boolean = false) {
     val navController = rememberNavController()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val preferences = remember { StepPreferences(context) }
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val stepCount by StepCounterService.stepCount.collectAsState()
-    val isTracking by StepCounterService.isServiceRunning.collectAsState()
+    // Ambil data langkah & status dari Service / Preferences
+    val serviceStepCount by StepCounterService.stepCount.collectAsState()
+    val savedStepCount by preferences.todaySteps.collectAsState(initial = 0L)
+    val isTrackingService by StepCounterService.isServiceRunning.collectAsState()
+    val isTrackingPref by preferences.isTracking.collectAsState(initial = false)
+    val stepInterval by preferences.stepInterval.collectAsState(initial = 1000)
 
-    // Permission launcher for ACTIVITY_RECOGNITION & POST_NOTIFICATIONS
+    val currentSteps = if (serviceStepCount > 0L) serviceStepCount else savedStepCount
+    val isTracking = isTrackingService || isTrackingPref
+
+    // Jika dibuka dari notifikasi checkpoint, arahkan langsung ke tab Kamera
+    LaunchedEffect(openCameraDirectly) {
+        if (openCameraDirectly) {
+            navController.navigate(Screen.Camera.route) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    // Permission launcher untuk ACTIVITY_RECOGNITION & POST_NOTIFICATIONS
     val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestMultiplePermissions(),
+        contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val activityGranted = permissions[Manifest.permission.ACTIVITY_RECOGNITION] == true
 
         if (activityGranted) {
-            startTrackingService(context)
+            StepCounterService.start(context)
         } else {
             Toast.makeText(
                 context,
@@ -81,7 +106,7 @@ fun MainScreen() {
         }
 
         if (permissionsToRequest.isEmpty()) {
-            startTrackingService(context)
+            StepCounterService.start(context)
         } else {
             permissionLauncher.launch(permissionsToRequest.toTypedArray())
         }
@@ -119,15 +144,17 @@ fun MainScreen() {
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(
-                    stepCount = stepCount,
+                    stepCount = currentSteps,
+                    stepInterval = stepInterval,
                     isTracking = isTracking,
                     onStartTracking = { requestPermissionsAndStart() },
-                    onStopTracking = { stopTrackingService(context) }
+                    onStopTracking = { StepCounterService.stop(context) }
                 )
             }
             composable(Screen.Camera.route) {
+                val checkpointNum = if (currentSteps == 0L) 1 else ((currentSteps / stepInterval) + 1).toInt()
                 CameraScreen(
-                    checkpointNumber = if (stepCount == 0) 1 else (stepCount / 1000) + 1,
+                    checkpointNumber = checkpointNum,
                     onTakePhoto = {},
                     onTakeLater = {
                         navController.navigate(Screen.Timeline.route)
@@ -141,22 +168,15 @@ fun MainScreen() {
                 MapScreen()
             }
             composable(Screen.Profile.route) {
-                ProfileScreen()
+                ProfileScreen(
+                    selectedInterval = stepInterval,
+                    onIntervalChanged = { newInterval ->
+                        scope.launch {
+                            preferences.setStepInterval(newInterval)
+                        }
+                    }
+                )
             }
         }
     }
-}
-
-private fun startTrackingService(context: Context) {
-    val intent = Intent(context, StepCounterService::class.java).apply {
-        action = StepCounterService.ACTION_START
-    }
-    ContextCompat.startForegroundService(context, intent)
-}
-
-private fun stopTrackingService(context: Context) {
-    val intent = Intent(context, StepCounterService::class.java).apply {
-        action = StepCounterService.ACTION_STOP
-    }
-    context.startService(intent)
 }
