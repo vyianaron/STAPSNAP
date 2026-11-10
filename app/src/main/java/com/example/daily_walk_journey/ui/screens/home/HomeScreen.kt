@@ -35,11 +35,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun HomeScreen(
     stepCount: Long = 0L,
-    stepInterval: Int = 1000,
-    dailyTarget: Long = 10000L,
+    dailyTarget: Long = 1000L,
+    canAddDailyTarget: Boolean = false,
     isTracking: Boolean = false,
     onStartTracking: () -> Unit = {},
-    onStopTracking: () -> Unit = {}
+    onStopTracking: () -> Unit = {},
+    onAddDailyTarget: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -155,17 +156,33 @@ fun HomeScreen(
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
-                        val remaining = if (stepCount == 0L) {
-                            stepInterval.toLong()
+                        if (stepCount >= dailyTarget && canAddDailyTarget) {
+                            Text(
+                                text = "Target $dailyTarget langkah tercapai.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = onAddDailyTarget,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Tambah target +1.000")
+                            }
+                        } else if (stepCount >= dailyTarget) {
+                            Text(
+                                text = "Target tercapai. Checkpoint sedang disiapkan.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         } else {
-                            val rem = stepInterval - (stepCount % stepInterval)
-                            if (rem == 0L) stepInterval.toLong() else rem
+                            val remaining = dailyTarget - stepCount
+                            Text(
+                                text = "$remaining langkah lagi untuk membuka checkpoint",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                        Text(
-                            text = "$remaining langkah lagi untuk abadikan momen",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
             }

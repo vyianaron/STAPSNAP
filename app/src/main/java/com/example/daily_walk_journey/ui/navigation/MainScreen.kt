@@ -6,42 +6,59 @@ import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.daily_walk_journey.data.repository.AchievementCatalog
 import com.example.daily_walk_journey.data.preferences.StepPreferences
+import kotlinx.coroutines.launch
 import com.example.daily_walk_journey.service.StepCounterService
 import com.example.daily_walk_journey.ui.screens.camera.CameraScreen
 import com.example.daily_walk_journey.ui.screens.home.HomeScreen
 import com.example.daily_walk_journey.ui.screens.map.MapScreen
+import com.example.daily_walk_journey.ui.screens.profile.AchievementViewModel
 import com.example.daily_walk_journey.ui.screens.profile.ProfileScreen
 import com.example.daily_walk_journey.ui.screens.timeline.TimelineScreen
-import kotlinx.coroutines.launch
 
 @Composable
-fun MainScreen(openCameraDirectly: Boolean = false) {
+fun MainScreen(
+    openCameraDirectly: Boolean = false,
+    checkpointIdFromIntent: Long = -1L
+) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val preferences = remember { StepPreferences(context) }
+    val achievementViewModel: AchievementViewModel = viewModel()
+    val profileState by achievementViewModel.profileState.collectAsState()
+    val pendingUnlocks by achievementViewModel.pendingUnlocks.collectAsState()
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -51,7 +68,8 @@ fun MainScreen(openCameraDirectly: Boolean = false) {
     val savedStepCount by preferences.todaySteps.collectAsState(initial = 0L)
     val isTrackingService by StepCounterService.isServiceRunning.collectAsState()
     val isTrackingPref by preferences.isTracking.collectAsState(initial = false)
-    val stepInterval by preferences.stepInterval.collectAsState(initial = 1000)
+    val dailyTargetSteps by preferences.dailyTargetSteps.collectAsState(initial = 1000L)
+    val lastCheckpointSteps by preferences.lastCheckpointSteps.collectAsState(initial = 0L)
 
     val currentSteps = if (serviceStepCount > 0L) serviceStepCount else savedStepCount
     val isTracking = isTrackingService || isTrackingPref
@@ -145,38 +163,78 @@ fun MainScreen(openCameraDirectly: Boolean = false) {
             composable(Screen.Home.route) {
                 HomeScreen(
                     stepCount = currentSteps,
-                    stepInterval = stepInterval,
+                    dailyTarget = dailyTargetSteps,
+                    canAddDailyTarget = currentSteps >= dailyTargetSteps &&
+                        lastCheckpointSteps >= dailyTargetSteps,
                     isTracking = isTracking,
                     onStartTracking = { requestPermissionsAndStart() },
-                    onStopTracking = { StepCounterService.stop(context) }
+                    onStopTracking = { StepCounterService.stop(context) },
+                    onAddDailyTarget = {
+                        scope.launch { preferences.addDailyTarget() }
+                    }
                 )
             }
             composable(Screen.Camera.route) {
-                val checkpointNum = if (currentSteps == 0L) 1 else ((currentSteps / stepInterval) + 1).toInt()
                 CameraScreen(
-                    checkpointNumber = checkpointNum,
-                    onTakePhoto = {},
+                    checkpointIdFromIntent = checkpointIdFromIntent,
+                    onPhotoTaken = {
+                        navController.navigate(Screen.Timeline.route) {
+                            popUpTo(Screen.Camera.route) { inclusive = true }
+                        }
+                    },
                     onTakeLater = {
                         navController.navigate(Screen.Timeline.route)
                     }
                 )
             }
             composable(Screen.Timeline.route) {
-                TimelineScreen()
+                TimelineScreen(
+                    onNavigateToCamera = {
+                        navController.navigate(Screen.Camera.route)
+                    }
+                )
             }
             composable(Screen.Map.route) {
                 MapScreen()
             }
             composable(Screen.Profile.route) {
-                ProfileScreen(
-                    selectedInterval = stepInterval,
-                    onIntervalChanged = { newInterval ->
-                        scope.launch {
-                            preferences.setStepInterval(newInterval)
-                        }
-                    }
-                )
+                ProfileScreen(profileState = profileState)
             }
         }
+    }
+
+    pendingUnlocks.firstOrNull()?.let { unlocked ->
+        val definition = AchievementCatalog.find(unlocked.key)
+        AlertDialog(
+            onDismissRequest = { achievementViewModel.markUnlockSeen(unlocked.key) },
+            title = { Text("Lencana baru terbuka!") },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = definition?.emoji ?: "🏅",
+                        style = MaterialTheme.typography.displayMedium
+                    )
+                    Text(
+                        text = definition?.title ?: "Achievement",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = definition?.description.orEmpty(),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    achievementViewModel.markUnlockSeen(unlocked.key)
+                }) {
+                    Text("Keren!")
+                }
+            }
+        )
     }
 }

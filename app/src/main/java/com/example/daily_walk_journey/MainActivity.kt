@@ -15,16 +15,21 @@ import com.example.daily_walk_journey.ui.theme.Daily_walk_journeyTheme
 class MainActivity : ComponentActivity() {
 
     private var openCameraDirectly by mutableStateOf(false)
+    private var checkpointIdFromIntent by mutableStateOf(-1L)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         openCameraDirectly = intent?.getBooleanExtra(StepCounterService.EXTRA_OPEN_CAMERA, false) ?: false
+        checkpointIdFromIntent = intent?.getLongExtra(StepCounterService.EXTRA_CHECKPOINT_ID, -1L) ?: -1L
 
         setContent {
             Daily_walk_journeyTheme {
-                MainScreen(openCameraDirectly = openCameraDirectly)
+                MainScreen(
+                    openCameraDirectly = openCameraDirectly,
+                    checkpointIdFromIntent = checkpointIdFromIntent
+                )
             }
         }
     }
@@ -33,5 +38,6 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         openCameraDirectly = intent.getBooleanExtra(StepCounterService.EXTRA_OPEN_CAMERA, false)
+        checkpointIdFromIntent = intent.getLongExtra(StepCounterService.EXTRA_CHECKPOINT_ID, -1L)
     }
 }

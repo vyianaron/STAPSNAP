@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Speed / Motion lines trailing to the right -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 60,45.5 L 75,45.5 C 77,45.5 79,46.2 81,46.5 L 58,47.3 Z
+                  M 55,50.5 L 85,50.5 C 88,50.5 91,51.2 93,51.5 L 53,52.3 Z
+                  M 50,55.5 L 91,55.5 C 94,55.5 97,56.2 99,56.5 L 48,57.3 Z
+                  M 45,60.5 L 96,60.5 C 99,60.5 102,61.2 104,61.5 L 43,62.3 Z
+                  M 40,65.5 L 100,65.5 C 103,65.5 105,66.2 107,66.5 L 38,67.3 Z
+                  M 33,70.5 L 103,70.5 C 106,70.5 107.5,71 108,71.3 L 30,72 Z" />
+
+    <!-- Shoe body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 52,22
+                  C 57,22 63,26 68,32
+                  C 74,39 74,45 68,52
+                  L 56,60
+                  C 48,65 38,72 28,72
+                  C 21,72 18,68 20,63
+                  C 23,58 31,45 35,38
+                  C 37,34 40,30 44,28
+                  C 46,27 48,22 52,22 Z" />
+</vector>

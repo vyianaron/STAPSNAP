@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- 3 Flash rays at top -->
+    <path
+        android:fillColor="#4D4D4D"
+        android:pathData="M 57,10 L 63,10 C 64.5,10 65,11 65,13 L 65,26 C 65,28 64.5,29 63,29 L 57,29 C 55.5,29 55,28 55,26 L 55,13 C 55,11 55.5,10 57,10 Z" />
+    <path
+        android:fillColor="#4D4D4D"
+        android:pathData="M 39,16 C 40,14.5 42,14.5 43.5,15.5 L 53,21.5 C 54.5,22.5 54.5,24.5 53.5,26 C 52.5,27.5 50.5,27.5 49,26.5 L 39.5,20.5 C 38,19.5 38,17.5 39,16 Z" />
+    <path
+        android:fillColor="#4D4D4D"
+        android:pathData="M 81,16 C 82,17.5 82,19.5 80.5,20.5 L 71,26.5 C 69.5,27.5 67.5,27.5 66.5,26 C 65.5,24.5 65.5,22.5 67,21.5 L 76.5,15.5 C 78,14.5 80,14.5 81,16 Z" />
+
+    <!-- Camera Top Housing -->
+    <path
+        android:fillColor="#4D4D4D"
+        android:pathData="M 40,36 C 40,33 43,31 46,31 L 74,31 C 77,31 80,33 80,36 L 80,45 L 40,45 Z" />
+
+    <!-- Left Small Button on Top -->
+    <path
+        android:fillColor="#4D4D4D"
+        android:pathData="M 22,39 C 22,37 24,35 26,35 L 33,35 C 35,35 37,37 37,39 L 37,45 L 22,45 Z" />
+
+    <!-- Main Camera Body -->
+    <path
+        android:fillColor="#4D4D4D"
+        android:pathData="M 20,45 L 100,45 C 108,45 112,49 112,57 L 112,93 C 112,101 108,105 100,105 L 20,105 C 12,105 8,101 8,93 L 8,57 C 8,49 12,45 20,45 Z" />
+
+    <!-- Lens Outer Ring cutout -->
+    <path
+        android:fillColor="#B5B6A9"
+        android:pathData="M 60,53 C 73.8,53 85,64.2 85,78 C 85,91.8 73.8,103 60,103 C 46.2,103 35,91.8 35,78 C 35,64.2 46.2,53 60,53 Z" />
+
+    <!-- Lens Inner Circle -->
+    <path
+        android:fillColor="#4D4D4D"
+        android:pathData="M 60,60 C 69.9,60 78,68.1 78,78 C 78,87.9 69.9,96 60,96 C 50.1,96 42,87.9 42,78 C 42,68.1 50.1,60 60,60 Z" />
+
+    <!-- Lens Glint / Arc -->
+    <path
+        android:fillColor="#B5B6A9"
+        android:pathData="M 66,66 C 68,66 70,68 70,70 C 68.5,70 67.5,69 66,66 Z" />
+
+    <!-- Right Accent Window -->
+    <path
+        android:fillColor="#B5B6A9"
+        android:pathData="M 91,65 L 101,65 C 103,65 104,66 104,68 L 104,72 C 104,74 103,75 101,75 L 91,75 C 89,75 88,74 88,72 L 88,68 C 88,66 89,65 91,65 Z" />
+</vector>
