@@ -71,6 +71,7 @@ fun PoiDetailDialog(
     poi: Poi?,
     onAddPhoto: (String) -> Unit,
     onDeletePhoto: (PoiPhoto) -> Unit,
+    onDeletePoiRequested: () -> Unit,
     onDismissRequest: () -> Unit,
     onCameraPermissionDenied: () -> Unit
 ) {
@@ -80,16 +81,6 @@ fun PoiDetailDialog(
     var deletePhotoTarget by remember { mutableStateOf<PoiPhoto?>(null) }
 
     val photos = poi?.photos ?: emptyList()
-    val pagerState = rememberPagerState(
-        initialPage = 0,
-        pageCount = { photos.size.coerceAtLeast(1) }
-    )
-
-    LaunchedEffect(photos.size) {
-        if (photos.isNotEmpty()) {
-            pagerState.animateScrollToPage(photos.size - 1)
-        }
-    }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
@@ -191,7 +182,6 @@ fun PoiDetailDialog(
                         // Photo Gallery Area
                         PhotoPager(
                             photos = photos,
-                            pagerState = pagerState,
                             onDeletePhoto = { target ->
                                 deletePhotoTarget = target
                             }
@@ -276,8 +266,7 @@ fun PoiDetailDialog(
                                         Text(
                                             text = noteText!!,
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = StepSnapColors.Ink,
-                                            modifier = Modifier.verticalScroll(rememberScrollState())
+                                            color = StepSnapColors.Ink
                                         )
                                     } else {
                                         Text(
@@ -286,6 +275,20 @@ fun PoiDetailDialog(
                                             color = StepSnapColors.Muted
                                         )
                                     }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                TextButton(
+                                    onClick = onDeletePoiRequested,
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.delete_poi_button),
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                         }
@@ -335,6 +338,7 @@ private fun PoiDetailDialogNoPhotosPreview() {
             ),
             onAddPhoto = {},
             onDeletePhoto = {},
+            onDeletePoiRequested = {},
             onDismissRequest = {},
             onCameraPermissionDenied = {}
         )
@@ -359,6 +363,7 @@ private fun PoiDetailDialogOnePhotoPreview() {
             ),
             onAddPhoto = {},
             onDeletePhoto = {},
+            onDeletePoiRequested = {},
             onDismissRequest = {},
             onCameraPermissionDenied = {}
         )
@@ -385,6 +390,7 @@ private fun PoiDetailDialogThreePhotosPreview() {
             ),
             onAddPhoto = {},
             onDeletePhoto = {},
+            onDeletePoiRequested = {},
             onDismissRequest = {},
             onCameraPermissionDenied = {}
         )

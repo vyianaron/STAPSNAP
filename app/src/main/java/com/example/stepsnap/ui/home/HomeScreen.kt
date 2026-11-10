@@ -209,8 +209,14 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
         }
     }
 
-    fun openSetPointDialog() {
+    var pendingSetPointLat by rememberSaveable { mutableStateOf<Double?>(null) }
+    var pendingSetPointLng by rememberSaveable { mutableStateOf<Double?>(null) }
+
+    fun openSetPointDialog(targetLat: Double, targetLng: Double) {
+        pendingSetPointLat = targetLat
+        pendingSetPointLng = targetLng
         if (context.hasLocationPermission()) {
+            viewModel.startLocationTracking()
             showSetPointDialog = true
         } else {
             pendingSetPointDialog = true
@@ -387,7 +393,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             currentLocation = currentLocation,
             routePoints = routePoints,
             fabPaddingBottom = sheetPeekHeight,
-            onOpenSetPointDialog = { openSetPointDialog() },
+            onOpenSetPointDialog = { lat, lng -> openSetPointDialog(lat, lng) },
             onPoiSelected = { poiId -> selectedPoiId = poiId }
         )
     }
@@ -397,6 +403,17 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
         val setPointUiState by setPointViewModel.uiState.collectAsState()
         val pointSavedMsg = stringResource(R.string.point_saved_success)
 
+        LaunchedEffect(pendingSetPointLat, pendingSetPointLng, currentLocation) {
+            val loc = currentLocation
+            val lat = loc?.latitude ?: pendingSetPointLat
+            val lng = loc?.longitude ?: pendingSetPointLng
+            if (lat != null && lng != null) {
+                setPointViewModel.setLocation(lat, lng)
+            } else {
+                setPointViewModel.fetchCurrentLocation()
+            }
+        }
+
         SetPointDialog(
             uiState = setPointUiState,
             onNameChange = setPointViewModel::onNameChanged,
@@ -405,10 +422,11 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             onRetakePhoto = setPointViewModel::onRetakePhoto,
             onFetchLocation = {
                 val loc = currentLocation
-                setPointViewModel.fetchCurrentLocation(
-                    fallbackLat = loc?.latitude,
-                    fallbackLng = loc?.longitude
-                )
+                if (loc != null) {
+                    setPointViewModel.setLocation(loc.latitude, loc.longitude)
+                } else {
+                    setPointViewModel.fetchCurrentLocation()
+                }
             },
             onSavePoint = {
                 setPointViewModel.savePoint { _ ->
@@ -435,14 +453,15 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
     selectedPoiId?.let { poiId ->
         val detailViewModel: PoiDetailViewModel = viewModel(
             key = "poi_detail_$poiId"
-        ) {
-            PoiDetailViewModel(
-                application = context.applicationContext as android.app.Application,
-                savedStateHandle = SavedStateHandle(mapOf("poiId" to poiId))
-            )
+        )
+        
+        LaunchedEffect(poiId) {
+            detailViewModel.load(poiId)
         }
+
         val detailPoi by detailViewModel.poi.collectAsState()
         val detailMsg by detailViewModel.message.collectAsState()
+        val showDeletePoiConfirm by detailViewModel.showDeletePoiConfirm.collectAsState()
 
         LaunchedEffect(detailMsg) {
             detailMsg?.let { msg ->
@@ -457,6 +476,7 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
             onDeletePhoto = { photo ->
                 detailViewModel.requestDeletePhoto(photo.id, photo.path)
             },
+            onDeletePoiRequested = detailViewModel::requestDeletePoi,
             onDismissRequest = { selectedPoiId = null },
             onCameraPermissionDenied = detailViewModel::showCameraPermissionDenied
         )
@@ -474,6 +494,28 @@ fun HomeScreen(viewModel: HomeViewModel = viewModel()) {
                 },
                 dismissButton = {
                     TextButton(onClick = detailViewModel::cancelDeletePhoto) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
+        }
+
+        if (showDeletePoiConfirm) {
+            AlertDialog(
+                onDismissRequest = detailViewModel::cancelDeletePoi,
+                title = { Text(stringResource(R.string.confirm_delete_poi_title)) },
+                text = { Text(stringResource(R.string.confirm_delete_poi_message)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        detailViewModel.confirmDeletePoi {
+                            selectedPoiId = null
+                        }
+                    }) {
+                        Text(stringResource(R.string.delete))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = detailViewModel::cancelDeletePoi) {
                         Text(stringResource(R.string.cancel))
                     }
                 }

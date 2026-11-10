@@ -77,4 +77,8 @@
     <string name="photo_added_success">Foto berhasil ditambahkan.</string>
     <string name="photo_deleted_success">Foto berhasil dihapus.</string>
     <string name="camera_permission_required_photo">Izin kamera diperlukan untuk mengambil foto.</string>
+    <string name="delete_poi_button">Hapus Tempat Ini</string>
+    <string name="confirm_delete_poi_title">Hapus Tempat ini?</string>
+    <string name="confirm_delete_poi_message">Apakah Anda yakin ingin menghapus tempat ini? Semua foto terkait juga akan dihapus.</string>
+    <string name="poi_deleted_success">Tempat berhasil dihapus.</string>
 </resources>

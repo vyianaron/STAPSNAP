@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +39,6 @@ import java.io.File
 @Composable
 fun PhotoPager(
     photos: List<PoiPhoto>,
-    pagerState: PagerState,
     onDeletePhoto: (PoiPhoto) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -58,6 +58,16 @@ fun PhotoPager(
                 modifier = Modifier.size(72.dp)
             )
         } else {
+            val pagerState = rememberPagerState(pageCount = { photos.size })
+
+            LaunchedEffect(photos.size) {
+                if (photos.isNotEmpty() && pagerState.currentPage >= photos.size) {
+                    try {
+                        pagerState.scrollToPage(photos.size - 1)
+                    } catch (_: Exception) {}
+                }
+            }
+
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()

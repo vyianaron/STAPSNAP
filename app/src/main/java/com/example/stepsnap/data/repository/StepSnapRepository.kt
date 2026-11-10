@@ -69,6 +69,16 @@ class StepSnapRepository(
         } catch (_: Exception) {}
     }
 
+    suspend fun deletePoi(poiId: Long) {
+        val poiWithPhotos = database.poiDao().getPoiWithPhotosSync(poiId)
+        poiWithPhotos?.photos?.forEach { photo ->
+            try {
+                File(photo.path).delete()
+            } catch (_: Exception) {}
+        }
+        database.poiDao().deletePoi(poiId)
+    }
+
     suspend fun getDailyRecord(date: String): DailyRecordEntity? =
         database.dailyRecordDao().getByDate(date)
 

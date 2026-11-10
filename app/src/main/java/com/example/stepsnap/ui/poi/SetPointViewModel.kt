@@ -100,7 +100,13 @@ class SetPointViewModel(
 
     @SuppressLint("MissingPermission")
     fun fetchCurrentLocation(fallbackLat: Double? = null, fallbackLng: Double? = null) {
-        if (_uiState.value.latitude != null && _uiState.value.longitude != null) return
+        val app = getApplication<Application>()
+        val instant = getInstantLocation(app)
+        if (instant != null) {
+            setLocation(instant.latitude, instant.longitude)
+        } else if (fallbackLat != null && fallbackLng != null) {
+            setLocation(fallbackLat, fallbackLng)
+        }
 
         _uiState.update { it.copy(isLocationLoading = true, locationError = null) }
         try {
@@ -110,43 +116,54 @@ class SetPointViewModel(
             ).addOnSuccessListener { location ->
                 if (location != null) {
                     setLocation(location.latitude, location.longitude)
-                } else if (fallbackLat != null && fallbackLng != null) {
-                    setLocation(fallbackLat, fallbackLng)
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            isLocationLoading = false,
-                            locationError = getApplication<Application>()
-                                .getString(R.string.location_unavailable)
-                        )
+                } else if (_uiState.value.latitude == null) {
+                    fusedLocationClient.lastLocation.addOnSuccessListener { lastLoc ->
+                        if (lastLoc != null) {
+                            setLocation(lastLoc.latitude, lastLoc.longitude)
+                        } else {
+                            _uiState.update {
+                                it.copy(
+                                    isLocationLoading = false,
+                                    locationError = app.getString(R.string.location_unavailable)
+                                )
+                            }
+                        }
                     }
+                } else {
+                    _uiState.update { it.copy(isLocationLoading = false) }
                 }
             }.addOnFailureListener {
-                if (fallbackLat != null && fallbackLng != null) {
-                    setLocation(fallbackLat, fallbackLng)
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            isLocationLoading = false,
-                            locationError = getApplication<Application>()
-                                .getString(R.string.location_unavailable)
-                        )
-                    }
-                }
+                _uiState.update { it.copy(isLocationLoading = false) }
             }
         } catch (_: SecurityException) {
-            if (fallbackLat != null && fallbackLng != null) {
-                setLocation(fallbackLat, fallbackLng)
-            } else {
+            if (_uiState.value.latitude == null) {
                 _uiState.update {
                     it.copy(
                         isLocationLoading = false,
-                        locationError = getApplication<Application>()
-                            .getString(R.string.location_permission_required)
+                        locationError = app.getString(R.string.location_permission_required)
                     )
                 }
+            } else {
+                _uiState.update { it.copy(isLocationLoading = false) }
             }
         }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun getInstantLocation(context: android.content.Context): android.location.Location? {
+        val locationManager = context.getSystemService(android.content.Context.LOCATION_SERVICE) as? android.location.LocationManager
+            ?: return null
+        var bestLocation: android.location.Location? = null
+        try {
+            val providers = locationManager.getProviders(true)
+            for (provider in providers) {
+                val l = locationManager.getLastKnownLocation(provider) ?: continue
+                if (bestLocation == null || l.accuracy < bestLocation.accuracy) {
+                    bestLocation = l
+                }
+            }
+        } catch (_: SecurityException) {}
+        return bestLocation
     }
 
     fun savePoint(onSuccess: (Poi) -> Unit) {
@@ -157,8 +174,18 @@ class SetPointViewModel(
             return
         }
 
-        val lat = state.latitude ?: return
-        val lng = state.longitude ?: return
+        val lat = state.latitude
+        val lng = state.longitude
+
+        if (lat == null || lng == null) {
+            _uiState.update {
+                it.copy(
+                    locationError = getApplication<Application>()
+                        .getString(R.string.location_unavailable)
+                )
+            }
+            return
+        }
 
         val newPoi = Poi(
             id = 0,
@@ -175,6 +202,12 @@ class SetPointViewModel(
             try {
                 repository.savePoi(newPoi)
                 _uiState.update { it.copy(isSaved = true) }
+                savedStateHandle[KEY_NAME] = null
+                savedStateHandle[KEY_DESC] = null
+                savedStateHandle[KEY_PHOTO] = null
+                savedStateHandle[KEY_LAT] = null
+                savedStateHandle[KEY_LNG] = null
+                _uiState.update { SetPointUiState() }
                 onSuccess(newPoi)
             } catch (_: Exception) {
                 _uiState.update {

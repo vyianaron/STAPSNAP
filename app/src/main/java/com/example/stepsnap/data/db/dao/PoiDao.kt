@@ -37,4 +37,11 @@ interface PoiDao {
 
     @Query("DELETE FROM poi_photos WHERE id = :photoId")
     suspend fun deletePhoto(photoId: Long)
+
+    @Transaction
+    @Query("SELECT * FROM pois WHERE id = :id")
+    suspend fun getPoiWithPhotosSync(id: Long): PoiWithPhotos?
+
+    @Query("DELETE FROM pois WHERE id = :poiId")
+    suspend fun deletePoi(poiId: Long)
 }

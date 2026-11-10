@@ -29,4 +29,9 @@ object StepSnapColors {
     val PointButton = Color(0xFF52B298)      // Tombol teal
     val DescBoxBg = Color(0xFFF3F3F3)        // Kotak deskripsi abu sangat muda
     val DarkIcon = Color(0xFF222222)         // Ikon abu tua
+
+    // Warna Marker Kategori POI
+    val PoiShopping = Color(0xFF3B82F6)  // Biru
+    val PoiPhoto = Color(0xFFA855F7)     // Ungu (default)
+    val PoiPark = Color(0xFF3E9B6A)      // Hijau
 }
